@@ -16,8 +16,14 @@ if (!supabaseUrl || !supabaseKey) {
   console.error('CRITICAL: Supabase URL or Anon Key is missing in environment variables.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = (supabaseUrl && supabaseKey)
+  ? createClient(supabaseUrl, supabaseKey)
+  : null;
 
-console.log('Supabase Client initialized for project URL:', supabaseUrl);
+if (supabase) {
+  console.log('Supabase Client initialized for project URL:', supabaseUrl);
+} else {
+  console.warn('Supabase Client NOT initialized (missing credentials).');
+}
 
 export default supabase;
