@@ -1,0 +1,20 @@
+{
+  "name": "student-disciplinary-record-counselling-log",
+  "version": "1.0.0",
+  "description": "Student Disciplinary Record & Counselling Log for Sri Gowthami Educational Institutions",
+  "main": "backend/server.js",
+  "type": "module",
+  "scripts": {
+    "setup": "npm install && npm install --prefix backend && npm install --prefix frontend",
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "build": "npm run setup && npm run build --prefix frontend",
+    "start": "node backend/server.js",
+    "test": "node tests/api_test.js && node --test tests/business_rules.test.js"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "sqlite3": "^6.0.1"
+  }
+}
