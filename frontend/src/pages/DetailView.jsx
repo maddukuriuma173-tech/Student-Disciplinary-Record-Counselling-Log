@@ -9,14 +9,30 @@ import {
   AlertTriangle,
   Send,
   ShieldCheck,
-  History
+  History,
+  Pencil
 } from 'lucide-react';
 
 const API_BASE = window.location.origin.includes('localhost:5173')
   ? 'http://localhost:5000/api'
   : '/api';
 
-const DetailView = ({ recordId, onBack, onEdit }) => {
+const parseActionPlans = (planField) => {
+  if (!planField || planField.trim() === '' || planField.toLowerCase() === 'n/a' || planField.toLowerCase() === 'none') {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(planField);
+    if (Array.isArray(parsed)) return parsed;
+  } catch (e) {}
+  // Plain text fallback
+  return planField.split(/[;\n•]+/)
+    .map(item => item.trim().replace(/^[-*•\d\.\s]+/, ''))
+    .filter(item => item.length > 2)
+    .map(text => ({ text, completed: false }));
+};
+
+const DetailView = ({ recordId, onBack, onEdit, onViewStudentProfile }) => {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -54,12 +70,13 @@ const DetailView = ({ recordId, onBack, onEdit }) => {
     try {
       const res = await fetch(`${API_BASE}/audit_logs`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           record_id: recordId,
           action: 'MANUAL_NOTE',
-          new_values: newRemark.trim(),
-          changed_by: 'Staff'
+          new_values: newRemark.trim()
         })
       });
 
@@ -72,6 +89,30 @@ const DetailView = ({ recordId, onBack, onEdit }) => {
       alert(err.message);
     } finally {
       setIsSubmittingRemark(false);
+    }
+  };
+
+  const handleToggleChecklist = async (index) => {
+    const currentPlans = parseActionPlans(record.improvement_action_plans);
+    const updatedPlans = currentPlans.map((item, idx) => 
+      idx === index ? { ...item, completed: !item.completed } : item
+    );
+
+    try {
+      const res = await fetch(`${API_BASE}/student_disciplinary_record_counsel/${record.id}/action-plans`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action_plans: updatedPlans })
+      });
+
+      if (!res.ok) throw new Error('Failed to update action checklist.');
+
+      // Reload detail view
+      await fetchDetail();
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -102,6 +143,12 @@ const DetailView = ({ recordId, onBack, onEdit }) => {
 
   return (
     <>
+      {/* Printable Report Header */}
+      <div className="print-header no-screen" style={{ display: 'none', marginBottom: '2rem', borderBottom: '2px solid #334155', paddingBottom: '1rem' }}>
+        <h2 style={{ color: '#0f172a', fontSize: '1.5rem', fontWeight: '800', textAlign: 'center' }}>SRI GOWTHAMI EDUCATIONAL INSTITUTIONS</h2>
+        <h3 style={{ color: '#334155', fontSize: '1.1rem', fontWeight: '700', textAlign: 'center', marginTop: '0.25rem' }}>STUDENT DISCIPLINARY FILE & COUSELLING DOSSIER</h3>
+      </div>
+
       {/* Detail Header Panel */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="no-print">
         <div>
@@ -110,33 +157,57 @@ const DetailView = ({ recordId, onBack, onEdit }) => {
             Disciplinary File: {record.student_name}
           </h1>
           <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-            Roll Number: <strong>{record.roll_number}</strong> | Class: <strong>{record.student_class}</strong>
+            Roll Number: <strong 
+              style={{ cursor: 'pointer', color: 'hsl(var(--accent-primary))', textDecoration: 'underline' }}
+              onClick={() => onViewStudentProfile(record.roll_number)}
+            >{record.roll_number}</strong> | Class: <strong>{record.student_class}</strong>
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button className="btn btn-secondary" onClick={handlePrint}>
             <Printer size={16} /> Print Report
           </button>
-          <button className="btn btn-secondary" onClick={() => onEdit(record.id)}>
-            Edit Record
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => onEdit(record.id)}
+            title="Edit Case Record"
+          >
+            <Pencil size={16} /> Edit Case
           </button>
-          <button className="btn btn-primary" onClick={onBack}>
-            <ArrowLeft size={16} /> Dashboard
+          <button className="btn btn-secondary" onClick={onBack}>
+            <ArrowLeft size={16} /> Back
           </button>
         </div>
       </div>
 
-      {/* Print Only Header (Visible only when printing) */}
-      <div style={{ display: 'none', borderBottom: '2px solid #000', paddingBottom: '1rem', marginBottom: '2rem' }} className="print-only">
-        <h1 style={{ fontSize: '24pt', fontWeight: 'bold' }}>Sri Gowthami Educational Institutions</h1>
-        <h2 style={{ fontSize: '18pt', marginTop: '0.5rem' }}>Student Disciplinary Record & Counselling Report</h2>
-        <p style={{ marginTop: '0.5rem', fontSize: '11pt' }}>
-          Date: {new Date().toLocaleDateString()} | Student Name: <strong>{record.student_name}</strong> | Roll Number: <strong>{record.roll_number}</strong> | Class: <strong>{record.student_class}</strong>
-        </p>
+      {/* Screen-only display details */}
+      <div className="print-only" style={{ display: 'none', marginBottom: '2rem' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
+          <tbody>
+            <tr>
+              <td style={{ padding: '0.5rem', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '25%' }}>Student Name</td>
+              <td style={{ padding: '0.5rem', border: '1px solid #cbd5e1' }}>{record.student_name}</td>
+              <td style={{ padding: '0.5rem', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '25%' }}>Roll Number</td>
+              <td style={{ padding: '0.5rem', border: '1px solid #cbd5e1' }}>{record.roll_number}</td>
+            </tr>
+            <tr>
+              <td style={{ padding: '0.5rem', fontWeight: 'bold', border: '1px solid #cbd5e1' }}>Class / Grade</td>
+              <td style={{ padding: '0.5rem', border: '1px solid #cbd5e1' }}>{record.student_class}</td>
+              <td style={{ padding: '0.5rem', fontWeight: 'bold', border: '1px solid #cbd5e1' }}>Case Status</td>
+              <td style={{ padding: '0.5rem', border: '1px solid #cbd5e1' }}>{record.status}</td>
+            </tr>
+            <tr>
+              <td style={{ padding: '0.5rem', fontWeight: 'bold', border: '1px solid #cbd5e1' }}>Risk Evaluation</td>
+              <td style={{ padding: '0.5rem', border: '1px solid #cbd5e1' }}>{record.risk_level} (Score: {record.risk_score})</td>
+              <td style={{ padding: '0.5rem', fontWeight: 'bold', border: '1px solid #cbd5e1' }}>Behavioral Trend</td>
+              <td style={{ padding: '0.5rem', border: '1px solid #cbd5e1' }}>{record.trend}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      {/* Two-Column Grid Panel */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
+      {/* Details Grid */}
+      <div className="detail-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem', marginTop: '2rem' }}>
         
         {/* Left Column: Descriptions and logs */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -170,11 +241,40 @@ const DetailView = ({ recordId, onBack, onEdit }) => {
 
           <div className="glass-panel" style={{ padding: '1.5rem' }}>
             <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid hsl(var(--border-color))', paddingBottom: '0.5rem' }}>
-              4. Student Improvement Action Plan
+              4. Student Improvement Action Plan (Interactive)
             </h3>
-            <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', fontSize: '0.95rem', color: 'hsl(var(--text-secondary))' }}>
-              {record.improvement_action_plans}
-            </p>
+            {(() => {
+              const plans = parseActionPlans(record.improvement_action_plans);
+              if (plans.length === 0) {
+                return <p style={{ fontStyle: 'italic', color: 'hsl(var(--text-muted))' }}>No action items defined.</p>;
+              }
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+                  {plans.map((item, idx) => (
+                    <label 
+                      key={idx} 
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'flex-start', 
+                        gap: '0.75rem', 
+                        cursor: 'pointer',
+                        fontSize: '0.95rem',
+                        color: item.completed ? 'hsl(var(--text-muted))' : 'hsl(var(--text-primary))',
+                        textDecoration: item.completed ? 'line-through' : 'none'
+                      }}
+                    >
+                      <input 
+                        type="checkbox" 
+                        checked={item.completed} 
+                        onChange={() => handleToggleChecklist(idx)}
+                        style={{ marginTop: '0.2rem', cursor: 'pointer' }}
+                      />
+                      <span>{item.text}</span>
+                    </label>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
         </div>
@@ -247,7 +347,7 @@ const DetailView = ({ recordId, onBack, onEdit }) => {
       </div>
 
       {/* Bottom Panel: Audit Trail Timeline */}
-      <div className="glass-panel" style={{ padding: '2rem', marginTop: '2rem' }}>
+      <div className="glass-panel font-dossier-timeline" style={{ padding: '2rem', marginTop: '2rem' }}>
         <h3 style={{ fontSize: '1.3rem', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid hsl(var(--border-color))', paddingBottom: '0.5rem' }}>
           <History size={20} style={{ color: 'hsl(var(--accent-secondary))' }} /> Case Audit Trail & Verification Logs
         </h3>
@@ -258,40 +358,57 @@ const DetailView = ({ recordId, onBack, onEdit }) => {
             <p style={{ color: 'hsl(var(--text-muted))', fontSize: '0.9rem' }}>No logs registered for this record.</p>
           ) : (
             audit_logs.map(log => {
-              // Parse audit log action and values
-              let details = '';
+              let displayInfo = log.action;
+              let displayColor = 'hsl(var(--text-muted))';
+
               if (log.action === 'CREATE') {
-                details = 'Disciplinary case file registered in system.';
+                displayInfo = 'Case created in cloud registry';
+                displayColor = 'hsl(var(--accent-primary))';
               } else if (log.action === 'UPDATE') {
-                details = 'Case information, counselling logs, or action plan details updated.';
+                displayInfo = 'Case logs updated by staff';
+                displayColor = '#eab308';
               } else if (log.action === 'STATUS_CHANGE') {
                 try {
-                  const olds = JSON.parse(log.old_values);
-                  const news = JSON.parse(log.new_values);
-                  details = `Case status updated from "${olds.status}" to "${news.status}".`;
+                  const nextVal = JSON.parse(log.new_values);
+                  displayInfo = `Status transitioned to: ${nextVal.status}`;
+                  displayColor = '#10b981';
                 } catch (e) {
-                  details = 'Status updated.';
+                  displayInfo = `Status transitioned`;
                 }
               } else if (log.action === 'MANUAL_NOTE') {
-                details = log.new_values;
+                displayInfo = 'Staff annotation remark';
+                displayColor = '#a855f7';
+              } else if (log.action === 'CHECKLIST_UPDATE') {
+                displayInfo = 'Action checklist updated';
+                displayColor = '#06b6d4';
               }
 
               return (
-                <div className="timeline-item" key={log.id}>
-                  <div className="timeline-dot">
-                    <MessageSquareCode size={12} style={{ color: 'hsl(var(--accent-primary))' }} />
+                <div key={log.id} className="timeline-item" style={{ borderLeft: `2px solid ${displayColor}`, paddingLeft: '1rem', paddingBottom: '1rem', position: 'relative' }}>
+                  <div style={{
+                    position: 'absolute',
+                    left: '-5px',
+                    top: '4px',
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: displayColor
+                  }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: '700', color: displayColor }}>
+                      {displayInfo}
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))' }}>
+                      {new Date(log.timestamp).toLocaleString()}
+                    </span>
                   </div>
-                  <div className="timeline-content">
-                    <div className="timeline-header">
-                      <span className="timeline-user">{log.changed_by}</span>
-                      <span className="timeline-meta" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <Calendar size={12} /> {new Date(log.timestamp).toLocaleString()}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '0.9rem', color: 'hsl(var(--text-primary))', whiteSpace: 'pre-wrap' }}>
-                      <strong style={{ color: 'hsl(var(--text-secondary))', marginRight: '0.5rem' }}>[{log.action}]</strong>
-                      {details}
-                    </div>
+                  {log.action === 'MANUAL_NOTE' && (
+                    <p style={{ fontSize: '0.9rem', marginTop: '0.25rem', color: 'hsl(var(--text-primary))', fontStyle: 'italic' }}>
+                      "{log.new_values}"
+                    </p>
+                  )}
+                  <div style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))', marginTop: '0.2rem' }}>
+                    Authorized Operator: <strong>{log.changed_by}</strong>
                   </div>
                 </div>
               );
@@ -299,20 +416,26 @@ const DetailView = ({ recordId, onBack, onEdit }) => {
           )}
         </div>
 
-        {/* Form to Append Manual Audit Note */}
-        <form onSubmit={handleAddRemark} className="no-print" style={{ display: 'flex', gap: '1rem', marginTop: '2rem', borderTop: '1px solid hsl(var(--border-color))', paddingTop: '1.5rem' }}>
-          <div style={{ flexGrow: 1 }}>
+        {/* Add manual remark form */}
+        <form onSubmit={handleAddRemark} style={{ marginTop: '2rem', display: 'flex', gap: '0.75rem' }} className="no-print">
+          <div style={{ flex: 1 }} className="input-with-icon">
+            <MessageSquareCode className="input-icon" size={18} />
             <input
               type="text"
-              className="form-input"
-              placeholder="Enter manual audit note, parent meeting outcome, or disciplinary update..."
+              placeholder="Add official annotation / verification remark..."
               value={newRemark}
               onChange={(e) => setNewRemark(e.target.value)}
               disabled={isSubmittingRemark}
+              required
             />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem 1.25rem' }} disabled={isSubmittingRemark || !newRemark.trim()}>
-            <Send size={16} /> Append Log
+          <button 
+            type="submit" 
+            className="btn btn-primary" 
+            disabled={isSubmittingRemark}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+          >
+            <Send size={14} /> Send Note
           </button>
         </form>
       </div>

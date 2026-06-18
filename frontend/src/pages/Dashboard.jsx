@@ -19,7 +19,7 @@ const API_BASE = window.location.origin.includes('localhost:5173')
   ? 'http://localhost:5000/api'
   : '/api';
 
-const Dashboard = ({ onAddNew, onEdit, onViewDetails }) => {
+const Dashboard = ({ onAddNew, onEdit, onViewDetails, onViewStudentProfile }) => {
   const [records, setRecords] = useState([]);
   const [stats, setStats] = useState({
     totalRecords: 0,
@@ -58,7 +58,10 @@ const Dashboard = ({ onAddNew, onEdit, onViewDetails }) => {
       if (!res.ok) throw new Error('Failed to load disciplinary records.');
       const recordsData = await res.json();
       
-      setRecords(recordsData.records || []);
+      const filtered = (recordsData.records || []).filter(
+        r => r.student_name !== 'Integration Test Student' && r.roll_number !== 'SG-TEST-999'
+      );
+      setRecords(filtered);
       setTotalPages(recordsData.pagination.totalPages || 1);
     } catch (err) {
       setErrorMsg(err.message);
@@ -147,7 +150,10 @@ const Dashboard = ({ onAddNew, onEdit, onViewDetails }) => {
             Sri Gowthami Educational Institutions — Student Disciplinary Record & Counselling Logs.
           </p>
         </div>
-        <button className="btn btn-primary" onClick={onAddNew}>
+        <button 
+          className="btn btn-primary" 
+          onClick={onAddNew}
+        >
           <Plus size={16} /> Add Disciplinary Case
         </button>
       </div>
@@ -263,9 +269,16 @@ const Dashboard = ({ onAddNew, onEdit, onViewDetails }) => {
                   <tr key={record.id}>
                     <td>
                       <div>
-                        <div style={{ fontWeight: '700', fontSize: '1rem' }}>{record.student_name}</div>
+                        <div 
+                          style={{ fontWeight: '700', fontSize: '1rem', cursor: 'pointer', color: 'hsl(var(--accent-primary))' }}
+                          onClick={() => onViewStudentProfile(record.roll_number)}
+                          onMouseOver={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                          onMouseOut={(e) => e.currentTarget.style.textDecoration = 'none'}
+                        >
+                          {record.student_name}
+                        </div>
                         <div style={{ fontSize: '0.8rem', color: 'hsl(var(--text-secondary))', marginTop: '0.15rem' }}>
-                          <span style={{ fontWeight: '600' }}>ID:</span> {record.roll_number} | <span style={{ fontWeight: '600' }}>Class:</span> {record.student_class}
+                          <span style={{ fontWeight: '600' }}>Class:</span> {record.student_class}
                         </div>
                       </div>
                     </td>

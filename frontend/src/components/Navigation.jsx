@@ -8,7 +8,7 @@ import {
   Moon 
 } from 'lucide-react';
 
-const Navigation = ({ activeTab, onNavigate, theme, onToggleTheme }) => {
+const Navigation = ({ user, onLogout, activeTab, onNavigate, theme, onToggleTheme }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
     { id: 'new', label: 'Add Case', icon: <FilePlus2 size={18} /> },
@@ -81,6 +81,28 @@ const Navigation = ({ activeTab, onNavigate, theme, onToggleTheme }) => {
 
       {/* Theme Toggler & Footer */}
       <div style={{ borderTop: '1px solid hsl(var(--border-color))', paddingTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {user && (
+          <div className="sidebar-user-card">
+            <div className="sidebar-user-avatar">
+              {user.username.charAt(0).toUpperCase()}
+            </div>
+            <div className="sidebar-user-info">
+              <span className="sidebar-user-name">{user.username}</span>
+              <span className="sidebar-user-email">{user.email}</span>
+            </div>
+          </div>
+        )}
+
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="btn btn-secondary btn-sidebar-logout"
+            style={{ width: '100%', justifyContent: 'center', padding: '0.5rem' }}
+          >
+            Sign Out
+          </button>
+        )}
+
         <button
           onClick={onToggleTheme}
           className="btn btn-secondary"

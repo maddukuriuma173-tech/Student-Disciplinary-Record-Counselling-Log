@@ -100,23 +100,23 @@ const Reports = () => {
             r.risk_score,
             r.risk_level,
             r.trend,
-            r.created_at,
-            r.updated_at
+            new Date(r.created_at).toLocaleDateString(),
+            new Date(r.updated_at).toLocaleDateString()
           ].join(',');
         })
       ].join('\n');
 
-      // Create blob download link
       const blob = new Blob([csvRows], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `disciplinary_records_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `Gowthami_Disciplinary_Export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     } catch (err) {
-      alert('Export failed: ' + err.message);
+      alert('Error exporting CSV: ' + err.message);
     }
   };
 
@@ -125,38 +125,55 @@ const Reports = () => {
     setEndDate('');
   };
 
-  if (isLoading && !data) return <LoadingSpinner />;
+  if (isLoading && !data) {
+    return <LoadingSpinner />;
+  }
 
-  // Format Recharts data structures
-  const statusChartData = data?.statusCounts?.map(item => ({
-    name: item.status,
-    Count: item.count
-  })) || [];
+  // Map backend statistics to Recharts formats
+  const statusChartData = data && data.statusCounts
+    ? data.statusCounts.map(item => ({
+        name: item.status,
+        Count: item.count
+      }))
+    : [];
 
-  const riskChartData = ['Low', 'Medium', 'High', 'Critical'].map(level => {
-    const found = data?.riskLevelCounts?.find(item => item.risk_level === level);
-    return {
-      name: level,
-      Count: found ? found.count : 0
-    };
-  });
+  const riskChartData = data && data.riskLevelCounts
+    ? ['Low', 'Medium', 'High', 'Critical'].map(level => {
+        const match = data.riskLevelCounts.find(item => item.risk_level === level);
+        return {
+          name: level,
+          Count: match ? match.count : 0
+        };
+      })
+    : [];
 
-  const timelineChartData = data?.timeSeries?.map(item => ({
-    date: new Date(item.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-    'Total Cases': item.total || 0,
-    'Severe Risk': item.severe_incidents || 0,
-    'Counsellings Logged': item.counselling_sessions_count || 0
-  })) || [];
+  const categoryChartData = data && data.categoryCounts
+    ? data.categoryCounts.map(item => ({
+        name: item.category,
+        Count: item.count
+      })).sort((a, b) => b.Count - a.Count)
+    : [];
+
+  const timelineChartData = data && data.timeSeries
+    ? data.timeSeries.map(item => ({
+        date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        'Total Cases': item.total,
+        'Severe Risk': item.severe_incidents,
+        'Counsellings Logged': item.counselling_sessions_count
+      }))
+    : [];
 
   return (
     <>
-      {/* Reports Header */}
+      {/* Analytics Header Panel */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <Breadcrumbs items={[{ label: 'Cases', hash: 'dashboard' }, { label: 'Reports & Analytics' }]} />
-          <h1 style={{ fontSize: '2rem', marginTop: '0.5rem' }} className="title-gradient">Reports & Analytics</h1>
+          <Breadcrumbs items={[{ label: 'Analytics Reports' }]} />
+          <h1 style={{ fontSize: '2rem', marginTop: '0.5rem' }} className="title-gradient">
+            Analytics & Patterns
+          </h1>
           <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-            Interactive charts, behavioral trends, status splits, and full data export capabilities.
+            Consolidated school-wide charts evaluating risk levels, status patterns, time trends, and infraction types.
           </p>
         </div>
         <button className="btn btn-primary" onClick={handleExportCSV}>
@@ -165,7 +182,7 @@ const Reports = () => {
       </div>
 
       {/* Analytics Control Filters */}
-      <div className="glass-panel" style={{ padding: '1.25rem 1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+      <div className="glass-panel" style={{ padding: '1.25rem 1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '1.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Calendar size={18} style={{ color: 'hsl(var(--accent-primary))' }} />
           <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>Filter Date Range:</span>
@@ -208,6 +225,7 @@ const Reports = () => {
           display: 'flex',
           alignItems: 'center',
           gap: '0.75rem',
+          marginTop: '1rem',
           borderLeft: '4px solid hsl(0 85% 50%)',
           backgroundColor: 'rgba(239, 68, 68, 0.05)'
         }}>
@@ -217,7 +235,7 @@ const Reports = () => {
       )}
 
       {/* Grid containing Charts */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '1.5rem' }}>
         
         {/* Chart 1: Status Distribution */}
         <div className="glass-panel" style={{ padding: '2rem', minHeight: '350px', display: 'flex', flexDirection: 'column' }}>
@@ -270,7 +288,32 @@ const Reports = () => {
           </div>
         </div>
 
-        {/* Chart 3: Timeline Series (Full Width Span) */}
+        {/* Chart 3: Misconduct Categories (Full Width) */}
+        <div className="glass-panel" style={{ padding: '2rem', minHeight: '380px', display: 'flex', flexDirection: 'column', gridColumn: 'span 2' }}>
+          <h3 style={{ fontSize: '1.15rem', marginBottom: '1.5rem', fontFamily: 'var(--font-heading)' }}>
+            Common Misconduct Categories (Keyword Extracted)
+          </h3>
+          <div style={{ flexGrow: 1, width: '100%', height: '280px' }}>
+            {categoryChartData.length === 0 ? (
+              <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: 'hsl(var(--text-muted))' }}>No category data parsed yet.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={categoryChartData} margin={{ bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="name" stroke="hsl(var(--text-secondary))" fontSize={10} angle={-10} textAnchor="end" />
+                  <YAxis stroke="hsl(var(--text-secondary))" fontSize={11} allowDecimals={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'hsl(var(--bg-secondary))', borderColor: 'hsl(var(--border-color))', borderRadius: '8px' }}
+                    labelStyle={{ color: 'hsl(var(--text-primary))', fontWeight: '600' }}
+                  />
+                  <Bar dataKey="Count" fill="#06b6d4" radius={[4, 4, 0, 0]} barSize={35} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        {/* Chart 4: Timeline Series (Full Width Span) */}
         <div className="glass-panel" style={{ padding: '2rem', minHeight: '380px', display: 'flex', flexDirection: 'column', gridColumn: 'span 2' }}>
           <h3 style={{ fontSize: '1.15rem', marginBottom: '1.5rem', fontFamily: 'var(--font-heading)' }}>
             Disciplinary Activity & Incidents Logged (30-day Time Series)

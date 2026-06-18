@@ -1,6 +1,6 @@
 import express from 'express';
 import { supabase } from './database.js';
-import { calculateRiskMetrics, determineTrend, validateStatusTransition } from './business_rules.js';
+import { calculateRiskMetrics, determineTrend, validateStatusTransition, categorizeMisconduct, parseActionPlans } from './business_rules.js';
 
 const router = express.Router();
 
@@ -48,6 +48,7 @@ router.get('/reports/summary', async (req, res, next) => {
     const statusMap = {};
     const riskMap = {};
     const timeSeriesMap = {};
+    const categoryMap = {};
 
     data.forEach(r => {
       // Status Counts
@@ -56,6 +57,10 @@ router.get('/reports/summary', async (req, res, next) => {
       // Risk Counts
       riskMap[r.risk_level] = (riskMap[r.risk_level] || 0) + 1;
       
+      // Misconduct Category
+      const cat = categorizeMisconduct(r.misconduct_incidents);
+      categoryMap[cat] = (categoryMap[cat] || 0) + 1;
+
       // Time Series (group by YYYY-MM-DD date)
       const dateStr = r.created_at ? r.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
       if (!timeSeriesMap[dateStr]) {
@@ -77,11 +82,13 @@ router.get('/reports/summary', async (req, res, next) => {
 
     const statusCounts = Object.keys(statusMap).map(k => ({ status: k, count: statusMap[k] }));
     const riskLevelCounts = Object.keys(riskMap).map(k => ({ risk_level: k, count: riskMap[k] }));
+    const categoryCounts = Object.keys(categoryMap).map(k => ({ category: k, count: categoryMap[k] }));
     const timeSeries = Object.values(timeSeriesMap).sort((a, b) => a.date.localeCompare(b.date));
 
     res.json({
       statusCounts,
       riskLevelCounts,
+      categoryCounts,
       timeSeries
     });
   } catch (error) {
@@ -425,7 +432,7 @@ router.get('/audit_logs', async (req, res, next) => {
 // 10. POST Write a manual remark into the audit log of a case
 router.post('/audit_logs', async (req, res, next) => {
   try {
-    const { record_id, action = 'MANUAL_NOTE', new_values, changed_by = 'Staff' } = req.body;
+    const { record_id, action = 'MANUAL_NOTE', new_values } = req.body;
 
     if (!record_id || !new_values) {
       return res.status(400).json({
@@ -451,7 +458,7 @@ router.post('/audit_logs', async (req, res, next) => {
         record_id,
         action,
         new_values,
-        changed_by
+        changed_by: 'Staff'
       }])
       .select()
       .single();
@@ -459,6 +466,123 @@ router.post('/audit_logs', async (req, res, next) => {
     if (insertError) throw insertError;
 
     res.status(201).json(createdLog);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 11. GET Student Profile
+router.get('/students/:rollNumber', async (req, res, next) => {
+  try {
+    const { rollNumber } = req.params;
+    
+    // Fetch all cases for this student
+    const { data: records, error: recordsError } = await supabase
+      .from('student_disciplinary_record_counsel')
+      .eq('roll_number', rollNumber)
+      .order('id', { ascending: false });
+
+    if (recordsError) throw recordsError;
+    if (!records || records.length === 0) {
+      return res.status(404).json({ success: false, message: 'No records found for this student.' });
+    }
+
+    // Fetch audit logs for all these cases
+    const recordIds = records.map(r => r.id);
+    const { data: logs, error: logsError } = await supabase
+      .from('audit_logs')
+      .in('record_id', recordIds)
+      .order('timestamp', { ascending: false });
+
+    if (logsError) throw logsError;
+
+    // Calculate aggregated statistics
+    const totalCases = records.length;
+    const activeCases = records.filter(r => r.status === 'Active').length;
+    const completedCases = records.filter(r => r.status === 'Completed').length;
+    
+    // Student general info (use most recent record details)
+    const studentInfo = {
+      student_name: records[0].student_name,
+      roll_number: rollNumber,
+      student_class: records[0].student_class,
+      current_risk_level: records[0].risk_level,
+      current_risk_score: records[0].risk_score
+    };
+
+    // Calculate progress details (total action plans vs completed action plans)
+    let totalActionItemsCount = 0;
+    let completedActionItemsCount = 0;
+    records.forEach(r => {
+      const parsedPlans = parseActionPlans(r.improvement_action_plans);
+      totalActionItemsCount += parsedPlans.length;
+      completedActionItemsCount += parsedPlans.filter(p => p.completed).length;
+    });
+
+    res.json({
+      student: studentInfo,
+      stats: {
+        totalCases,
+        activeCases,
+        completedCases,
+        totalActionItemsCount,
+        completedActionItemsCount
+      },
+      records,
+      audit_logs: logs
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 12. PATCH Update action plan checklist items
+router.patch('/student_disciplinary_record_counsel/:id/action-plans', async (req, res, next) => {
+  try {
+    const recordId = req.params.id;
+    const { action_plans } = req.body;
+
+    if (!Array.isArray(action_plans)) {
+      return res.status(400).json({ success: false, message: 'action_plans must be an array of checklist items.' });
+    }
+
+    // Fetch current state
+    const { data: currentRecord, error: fetchError } = await supabase
+      .from('student_disciplinary_record_counsel')
+      .select('*')
+      .eq('id', recordId)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+    if (!currentRecord) {
+      return res.status(404).json({ success: false, message: 'Disciplinary record not found.' });
+    }
+
+    // Update record
+    const { data: updatedRecord, error: updateError } = await supabase
+      .from('student_disciplinary_record_counsel')
+      .update({
+        improvement_action_plans: JSON.stringify(action_plans),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', recordId)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+
+    // Log update in audit trail
+    await supabase
+      .from('audit_logs')
+      .insert([{
+        record_id: recordId,
+        action: 'CHECKLIST_UPDATE',
+        old_values: JSON.stringify({ improvement_action_plans: currentRecord.improvement_action_plans }),
+        new_values: JSON.stringify({ improvement_action_plans: updatedRecord.improvement_action_plans }),
+        changed_by: 'Staff'
+      }]);
+
+    res.json(updatedRecord);
   } catch (error) {
     next(error);
   }

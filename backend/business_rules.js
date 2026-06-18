@@ -167,3 +167,64 @@ export function validateStatusTransition(currentRecord, newStatus) {
 
   return { valid: true };
 }
+
+/**
+ * Categorizes a misconduct description into high-level categories
+ */
+export function categorizeMisconduct(text) {
+  if (!text) return 'Behavioral (Other)';
+  const lower = text.toLowerCase();
+  if (lower.includes('phone') || lower.includes('mobile') || lower.includes('device') || lower.includes('gadget') || lower.includes('electronics')) {
+    return 'Device Policy';
+  }
+  if (lower.includes('cheat') || lower.includes('plagiar') || lower.includes('copying') || lower.includes('exam') || lower.includes('test') || lower.includes('malpractice')) {
+    return 'Academic Dishonesty';
+  }
+  if (lower.includes('absent') || lower.includes('bunk') || lower.includes('late') || lower.includes('attendance') || lower.includes('miss') || lower.includes('leave')) {
+    return 'Attendance/Punctuality';
+  }
+  if (lower.includes('fight') || lower.includes('physical') || lower.includes('assault') || lower.includes('bully') || lower.includes('hurt') || lower.includes('hit') || lower.includes('clash')) {
+    return 'Violence/Safety';
+  }
+  if (lower.includes('dress') || lower.includes('uniform') || lower.includes('hair') || lower.includes('groom') || lower.includes('shoe')) {
+    return 'Dress Code';
+  }
+  if (lower.includes('rude') || lower.includes('disrespect') || lower.includes('insubord') || lower.includes('argu') || lower.includes('talk back') || lower.includes('abuse')) {
+    return 'Insubordination';
+  }
+  return 'Behavioral (Other)';
+}
+
+/**
+ * Parses action plans field which can be a JSON string or plain text.
+ * Returns a structured checklist array: [{ text: string, completed: boolean }]
+ */
+export function parseActionPlans(planField) {
+  if (!planField || planField.trim() === '' || planField.toLowerCase() === 'n/a' || planField.toLowerCase() === 'none') {
+    return [];
+  }
+
+  // Try parsing as JSON array
+  try {
+    const parsed = JSON.parse(planField);
+    if (Array.isArray(parsed)) {
+      return parsed.map(item => ({
+        text: item.text || '',
+        completed: !!item.completed
+      }));
+    }
+  } catch (e) {
+    // If JSON parsing fails, treat it as plain text and split it by common separators
+  }
+
+  // Fallback: Split plain text into list items
+  const items = planField.split(/[;\n•]+/)
+    .map(item => item.trim().replace(/^[-*•\d\.\s]+/, '')) // clean bullet prefix
+    .filter(item => item.length > 2);
+
+  if (items.length === 0) {
+    return [{ text: planField.trim(), completed: false }];
+  }
+
+  return items.map(text => ({ text, completed: false }));
+}
