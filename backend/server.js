@@ -73,20 +73,25 @@ app.get('*', (req, res) => {
   });
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`=========================================`);
-  console.log(`Backend API Server running on port ${PORT}`);
-  console.log(`Health endpoint: http://localhost:${PORT}/health`);
-  console.log(`=========================================`);
-});
+let server;
+if (!process.env.VERCEL) {
+  server = app.listen(PORT, () => {
+    console.log(`=========================================`);
+    console.log(`Backend API Server running on port ${PORT}`);
+    console.log(`Health endpoint: http://localhost:${PORT}/health`);
+    console.log(`=========================================`);
+  });
+}
 
 // Graceful shutdown
-process.on('SIGINT', () => {
-  console.log('Shutting down server...');
-  server.close(() => {
-    console.log('API Server stopped.');
-    process.exit(0);
+if (server) {
+  process.on('SIGINT', () => {
+    console.log('Shutting down server...');
+    server.close(() => {
+      console.log('API Server stopped.');
+      process.exit(0);
+    });
   });
-});
+}
 
 export default app;
