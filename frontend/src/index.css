@@ -704,28 +704,28 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ==========================================
    HORIZON AUTH INTEGRATION STYLES
-   Sleek Dark Glassmorphism for Sign In & Register
+   Sleek Professional Light Theme for Sign In & Register
    ========================================== */
 
 .auth-container-wrapper {
-  --auth-bg-dark-1: #090d16;
-  --auth-bg-dark-2: #121824;
-  --auth-card-bg: rgba(17, 25, 40, 0.65);
-  --auth-card-border: rgba(255, 255, 255, 0.08);
-  --auth-primary-glow: rgba(99, 102, 241, 0.15);
-  --auth-primary-grad: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  --auth-primary-hover: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-  --auth-primary-color: #6366f1;
-  --auth-primary-light: #a5b4fc;
+  --auth-bg-light-1: #ffffff;
+  --auth-bg-light-2: #f8fafc;
+  --auth-card-bg: #ffffff;
+  --auth-card-border: #e2e8f0;
+  --auth-primary-glow: rgba(79, 70, 229, 0.08);
+  --auth-primary-grad: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  --auth-primary-hover: linear-gradient(135deg, #3730a3 0%, #4f46e5 100%);
+  --auth-primary-color: #4f46e5;
+  --auth-primary-light: #6366f1;
   --auth-danger-grad: linear-gradient(135deg, #ef4444 0%, #f43f5e 100%);
   --auth-danger-hover: linear-gradient(135deg, #dc2626 0%, #e11d48 100%);
   --auth-danger-color: #ef4444;
   --auth-success-color: #10b981;
   --auth-warning-color: #f59e0b;
   --auth-info-color: #3b82f6;
-  --auth-text-primary: #f8fafc;
-  --auth-text-muted: #94a3b8;
-  --auth-text-dark: #64748b;
+  --auth-text-primary: #0f172a;
+  --auth-text-muted: #475569;
+  --auth-text-dark: #94a3b8;
   --auth-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   display: flex;
@@ -733,8 +733,8 @@ h1, h2, h3, h4, h5, h6 {
   justify-content: center;
   min-height: 100vh;
   width: 100vw;
-  background-color: var(--auth-bg-dark-1);
-  background: radial-gradient(circle at 10% 20%, var(--auth-bg-dark-2) 0%, var(--auth-bg-dark-1) 100%);
+  background-color: var(--auth-bg-light-1);
+  background: radial-gradient(circle at 10% 20%, var(--auth-bg-light-2) 0%, var(--auth-bg-light-1) 100%);
   padding: 1.5rem;
   box-sizing: border-box;
   position: fixed;
@@ -767,8 +767,8 @@ h1, h2, h3, h4, h5, h6 {
 .auth-blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.12;
+  filter: blur(140px);
+  opacity: 0.05;
   animation: authFloat 25s infinite alternate ease-in-out;
 }
 
@@ -818,12 +818,10 @@ h1, h2, h3, h4, h5, h6 {
 .auth-card {
   background: var(--auth-card-bg);
   border: 1px solid var(--auth-card-border);
-  border-radius: 24px;
+  border-radius: 20px;
   padding: 40px;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 
-              inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 
+              0 8px 10px -6px rgba(15, 23, 42, 0.05);
   animation: authEntrance 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -903,9 +901,9 @@ h1, h2, h3, h4, h5, h6 {
 
 .auth-form-input {
   width: 100%;
-  background: rgba(10, 15, 26, 0.6);
-  border: 1.5px solid var(--auth-card-border);
-  border-radius: 12px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
   padding: 13px 16px 13px 44px;
   font-size: 0.92rem;
   color: var(--auth-text-primary);
@@ -914,19 +912,19 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .auth-form-input::placeholder {
-  color: var(--auth-text-dark);
+  color: #94a3b8;
 }
 
 .auth-form-input:focus {
   border-color: var(--auth-primary-color);
   box-shadow: 0 0 0 4px var(--auth-primary-glow);
-  background: rgba(10, 15, 26, 0.8);
+  background: #ffffff;
 }
 
 .auth-input-icon {
   position: absolute;
   left: 16px;
-  color: var(--auth-text-dark);
+  color: #94a3b8;
   font-size: 1.05rem;
   pointer-events: none;
   transition: var(--auth-transition);
@@ -935,7 +933,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .auth-form-input:focus ~ .auth-input-icon {
-  color: var(--auth-primary-light);
+  color: var(--auth-primary-color);
 }
 
 .auth-btn-toggle-password {
@@ -943,7 +941,7 @@ h1, h2, h3, h4, h5, h6 {
   right: 16px;
   background: none;
   border: none;
-  color: var(--auth-text-dark);
+  color: #94a3b8;
   cursor: pointer;
   padding: 4px;
   font-size: 1.05rem;
@@ -1009,7 +1007,7 @@ h1, h2, h3, h4, h5, h6 {
 .auth-password-strength-meter .bar {
   flex: 1;
   height: 100%;
-  background: var(--auth-card-border);
+  background: #e2e8f0;
   border-radius: 2px;
   transition: var(--auth-transition);
 }
@@ -1082,8 +1080,8 @@ h1, h2, h3, h4, h5, h6 {
   left: 0;
   height: 18px;
   width: 18px;
-  background-color: rgba(10, 15, 26, 0.6);
-  border: 1.5px solid var(--auth-card-border);
+  background-color: #ffffff;
+  border: 1.5px solid #cbd5e1;
   border-radius: 6px;
   transition: var(--auth-transition);
 }
@@ -1091,7 +1089,7 @@ h1, h2, h3, h4, h5, h6 {
 .auth-checkbox-container input:checked ~ .auth-checkbox-checkmark {
   background: var(--auth-primary-grad);
   border-color: transparent;
-  box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.2);
 }
 
 .auth-checkbox-checkmark:after {
@@ -1126,7 +1124,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .auth-forgot-pass-link:hover {
-  color: var(--auth-primary-light);
+  color: var(--auth-primary-color);
+  text-decoration: underline;
 }
 
 /* Auth Buttons */
@@ -1145,13 +1144,13 @@ h1, h2, h3, h4, h5, h6 {
   outline: none;
   background: var(--auth-primary-grad);
   color: #ffffff;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
   transition: var(--auth-transition);
 }
 
 .auth-btn-primary:hover {
   background: var(--auth-primary-hover);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
   transform: translateY(-1px);
 }
 
@@ -1169,7 +1168,7 @@ h1, h2, h3, h4, h5, h6 {
 .auth-redirect button {
   background: none;
   border: none;
-  color: var(--auth-primary-light);
+  color: var(--auth-primary-color);
   text-decoration: none;
   font-weight: 600;
   cursor: pointer;
@@ -1179,8 +1178,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .auth-redirect button:hover {
-  color: #ffffff;
-  text-shadow: 0 0 8px rgba(165, 180, 252, 0.4);
+  color: var(--auth-primary-light);
+  text-decoration: underline;
 }
 
 /* Modal Recovery styling */
@@ -1190,25 +1189,25 @@ h1, h2, h3, h4, h5, h6 {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(9, 13, 22, 0.8);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background-color: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 999999;
   opacity: 1;
-  transition: var(--auth-transition);
 }
 
 .auth-recovery-card {
-  background: var(--auth-card-bg);
+  background: #ffffff;
   border: 1px solid var(--auth-card-border);
   border-radius: 20px;
   padding: 32px;
   max-width: 420px;
   width: calc(100% - 40px);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+              0 10px 10px -5px rgba(0, 0, 0, 0.04);
   animation: authModalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -1325,7 +1324,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .auth-toast {
-  background: rgba(18, 24, 38, 0.92);
+  background: #ffffff;
   border: 1px solid var(--auth-card-border);
   border-left: 4px solid var(--auth-primary-color);
   border-radius: 12px;
@@ -1333,9 +1332,10 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   align-items: center;
   gap: 14px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 
+              0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   position: relative;
   overflow: hidden;
   animation: authToastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -1361,7 +1361,7 @@ h1, h2, h3, h4, h5, h6 {
 .auth-toast-success .auth-toast-icon { color: var(--auth-success-color); }
 .auth-toast-error .auth-toast-icon { color: var(--auth-danger-color); }
 .auth-toast-warning .auth-toast-icon { color: var(--auth-warning-color); }
-.auth-toast-info .auth-toast-icon { color: var(--auth-primary-light); }
+.auth-toast-info .auth-toast-icon { color: var(--auth-primary-color); }
 
 .auth-toast-content {
   flex-grow: 1;

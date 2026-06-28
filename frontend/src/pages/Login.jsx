@@ -372,7 +372,7 @@ const Login = ({ onLoginSuccess, onToggleRegister }) => {
             </button>
 
             <p className="auth-redirect">
-              New to Oasis? 
+              New to Sri Gowthami? 
               <button type="button" onClick={onToggleRegister}>Create an account</button>
             </p>
           </form>
